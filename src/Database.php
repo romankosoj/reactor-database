@@ -28,31 +28,28 @@ class PDO {
     }
 
     public function sql($query, $parameters = array()) {
-        if (!is_array($parameters)) {
-            $parameters = func_get_args();
-            array_shift($parameters);   
-        }
         $this->query = array(
-            'sql' => $query,
-            'parameters' => $parameters,
+            'sql' => $query
         );
-
         $this->free();
-
-        $execution_time = microtime(true);
-
         $this->statement = $this->getConnection()->prepare($query);
         if (!$this->statement) {
             $this->query['error'] => $this->getConnection()->errorInfo()[2];
             return false;
         }
-        if (!$this->statement->execute($parameters)) {
+        $this->exec($parameters);
+        return $this;
+    }
+
+    public function exec($parameters = array()) {
+        $this->query['parameters'] = $parameters;
+        $execution_time = microtime(true);
+        $is_good = $this->statement->execute($parameters);
+        $this->query['execution_time'] = microtime(true) - $execution_time;
+        if (!$is_good) {
             $this->query['error'] => $this->statement->errorInfo()[2];
             return false;
         }
-
-        $this->query['execution_time'] = microtime(true) - $execution_time;
-
         return $this;
     }
 
@@ -69,7 +66,6 @@ class PDO {
             return $line[$row];
         }
 
-        $this->free();
         return null;
     }
 
@@ -103,7 +99,6 @@ class PDO {
             }
         }
 
-        $this->free();
         return $data;
     }
 
