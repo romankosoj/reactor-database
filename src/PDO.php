@@ -1,8 +1,6 @@
 <?php
 
-namespase Reactor\Database;
-
-use \PDO;
+namespace Reactor\Database;
 
 class PDO {
     protected 
@@ -23,7 +21,7 @@ class PDO {
         if ($this->connection !== null) {
             return $this->connection;
         }
-        $this->connection = new PDO($this->link, $this->user, $this->pass);
+        $this->connection = new \PDO($this->link, $this->user, $this->pass);
         return $this->connection;
     }
 
@@ -34,7 +32,7 @@ class PDO {
         $this->free();
         $this->statement = $this->getConnection()->prepare($query);
         if (!$this->statement) {
-            $this->query['error'] => $this->getConnection()->errorInfo()[2];
+            $this->query['error'] = $this->getConnection()->errorInfo()[2];
             return false;
         }
         $this->exec($parameters);
@@ -47,7 +45,7 @@ class PDO {
         $is_good = $this->statement->execute($parameters);
         $this->query['execution_time'] = microtime(true) - $execution_time;
         if (!$is_good) {
-            $this->query['error'] => $this->statement->errorInfo()[2];
+            $this->query['error'] = $this->statement->errorInfo()[2];
             return false;
         }
         return $this;
