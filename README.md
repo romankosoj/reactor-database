@@ -19,7 +19,7 @@ Wrapped PDO
 
 ```php
 
-$db = new \\Reactor\\Database\\PDO\\Connection(
+$db = new \Reactor\Database\PDO\Connection(
         "mysql:dbname=test;host=localhost",
         "db.user",
         "db.pass"
