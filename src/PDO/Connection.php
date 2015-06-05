@@ -8,7 +8,7 @@ use Reactor\Database\Exceptions as Exceptions;
 class Connection implements ConnectionInterface {
     protected 
         $connection = null,
-        $connection_string, // connection string
+        $connection_string,
         $user,
         $pass;
 
@@ -31,6 +31,7 @@ class Connection implements ConnectionInterface {
     }
 
     public function sql($query, $arguments = array()) {
+        echo "$query ".json_encode($arguments)."<br>";
         $statement = $this->getConnection()->prepare($query);
         if (!$statement) {
             throw new Exceptions\DatabaseException($this->getConnection()->errorInfo()[2], $this);
@@ -46,56 +47,87 @@ class Connection implements ConnectionInterface {
         return $this->getConnection()->lastInsertId($name);
     }
 
-    public function insert($table, $data, $flags = '') {
+    protected function wrapWrere($where) {
+        if (trim($where) == '') {
+            return ' ';
+        }
+        return ' where '.$where;
+    }
+
+    public function select($table, $where_data = array(), $where = '') {
+        if ($where === '') {
+            $where = $this->buildPairs(array_keys($where_data), 'and');
+        }
+        return $this->sql('select * from `' . $table . '`'
+            . $this->wrapWrere($where), $where_data);
+    }
+
+    public function insert($table, $data) {
         $keys = array_keys($data);
-        $this->sql('insert ' . $flags . ' into `'.$table.'`
+        $this->sql('insert into `'.$table.'`
             (`' . implode('`, `', $keys) . '`)
             values (:' . implode(', :', $keys) . ')', $data);
         return $this->lastId();
     }
 
-    public function replace($table, $data, $flags = '') {   
+    public function replace($table, $data) {   
         $keys = array_keys($data);
-        $this->sql('replace ' . $flags . ' into `'.$table.'`
+        $this->sql('replace into `'.$table.'`
             (`' . implode('`, `', $keys) . '`)
             values (:' . implode(', :', $keys) . ')', $data);
         return $this->lastId();
     }
 
-    public function update($table, $data, $where = '', $flags = '') {
-        $query = '';
-        $keys = array_keys($data);
+    public function buildPairs($keys, $delimeter = ',') {
         $pairs = array();
-        foreach ($data as $k => $v) {
-            $pairs[] = '`' . $k . '`= ' . $v;    
+        foreach ($keys as $k) {
+            $pairs[] = '`' . $k . '`= :' . $k;    
         }
-        if ($where != '') {
-            $where = ' where ' . $where;
-        }
-        $this->sql('update ' . $flags . ' `' . $table . '` set ' . implode(', ', $pairs) . $where);
-        return $this->rowCount();
+        return implode(' ' . $delimeter . ' ', $pairs);
     }
 
-    public function pages($query, $parameters, $page, $per_page) {
+    public function update($table, $data, $where_data = array(), $where = '') {
+        if ($where === '') {
+            $where = $this->buildPairs(array_keys($where_data), 'and');
+        }
+        $query = $this->sql('update ' . $flags . ' `' . $table . '` set '
+            . $this->buildPairs(array_keys($data)) 
+            . $this->wrapWrere($where), array_merge($data, $where_data));
+        return $query->rowCount();
+    }
+
+    public function delete($table, $where_data = array(), $where = '') {
+        if ($where === '') {
+            $where = $this->buildPairs(array_keys($where_data), 'and');
+        }
+        $query = $this->sql('delete from `' . $table . '` '
+            . $this->wrapWrere($where), $where_data);
+        return $query->rowCount();
+    }
+
+    public function pages($query, $parameters, $page, $per_page, $total_rows = null) {
+        $per_page = (int)$per_page;
+        $page = (int)$page;
+
         if($p == 0) {
             $this->sql($query, $parameters);    
         } else {
+
             $from = ($page - 1)  * $per_page;
-            $this->sql($query . ' limit ' . $from . ', ' . $per_page, $parameters);
+            $data = $this->sql($query . ' limit ' . $from . ', ' . $per_page, $parameters);
         }
 
-        $data = $this->matr();
+        if ($total_rows === null) {
+            $cnt_query = stristr('from', $query);
 
-        $t = stripos($query, 'from');
-        $query = substr($query, $t);
+            $t = strripos($cnt_query, 'order by');
+            if($t !== false) {
+                $cnt_query = substr($cnt_query, 0, $t);
+            }
 
-        $t = strripos($query, 'order by');
-        if($t !== false) {
-            $query = substr($query, 0, $t);
+            $total_rows = $this->sql('SELECT count(*) as `count` ' . $cnt_query)->line('count');
         }
 
-        $this->sql('SELECT count(*) as `count` ' . $query);
-        $total_rows = $this->line('count');
         $total_pages = ceil($total_rows / $by);
         return array(
             'data' => $data,
