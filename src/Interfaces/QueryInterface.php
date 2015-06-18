@@ -8,7 +8,7 @@ interface QueryInterface extends \Iterator {
     public function line($row = '*');
     public function free();
     public function matr($key = null, $row = '*');
-    public function rowCount();
+    public function count();
     public function getStats();
     public function current();
     public function key();

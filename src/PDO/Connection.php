@@ -31,7 +31,7 @@ class Connection implements ConnectionInterface {
     }
 
     public function sql($query, $arguments = array()) {
-        echo "$query ".json_encode($arguments)."<br>";
+        // echo "$query ".json_encode($arguments)."<br>";
         $statement = $this->getConnection()->prepare($query);
         if (!$statement) {
             throw new Exceptions\DatabaseException($this->getConnection()->errorInfo()[2], $this);

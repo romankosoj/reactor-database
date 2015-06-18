@@ -75,7 +75,7 @@ class Query implements QueryInterface {
         return $data;
     }
 
-    public function rowCount() {
+    public function count() {
         return $this->statement->rowCount();
     }
 
@@ -90,6 +90,9 @@ class Query implements QueryInterface {
     }
 
     public function current() {
+        if (!$this->line) {
+            $this->next();
+        }
         return $this->line;
     }
 
@@ -101,7 +104,7 @@ class Query implements QueryInterface {
         $this->line = $this->line();
         $this->iterator_key++;
         if (!$this->line) {
-            $this->iterator_key = false;    
+            $this->iterator_key = false;
         }
     }
 
