@@ -23,6 +23,7 @@ class Connection implements ConnectionInterface {
             try {
                 $this->connection = new \PDO($this->connection_string, $this->user, $this->pass);
                 $this->connection->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+                $this->connection->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
             } catch (\PDOException $exception) {
                 throw new Exceptions\DatabaseException($exception->getMessage(), $this);
             }
